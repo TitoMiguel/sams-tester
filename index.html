@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Pruebas TransactionService</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+<div class="container my-4">
+    <h2 class="mb-4">Pruebas - TransactionService.svc/ProcessTransaction</h2>
+    <form id="transactionForm">
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label>Membresía</label>
+                <select id="membershipSelect" class="form-control"></select>
+            </div>
+            <div class="form-group col-md-2">
+                <label>Operación</label>
+                <select id="operationCode" class="form-control">
+                    <option value="Accumulate">Accumulate</option>
+                    <option value="Redeem">Redeem</option>
+                </select>
+            </div>
+            <div class="form-group col-md-2">
+                <label>Canal</label>
+                <input type="text" class="form-control" value="POS" id="channel" required>
+            </div>
+            <div class="form-group col-md-4">
+                <label>Fecha y hora (TS)</label>
+                <input type="datetime-local" class="form-control" id="registerTransactionTS" required>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label>Artículo</label>
+                <select id="itemSelect" class="form-control"></select>
+            </div>
+            <div class="form-group col-md-2">
+                <label>Cantidad</label>
+                <input type="number" class="form-control" id="itemQty" min="1" value="1">
+            </div>
+            <div class="form-group col-md-2">
+                <label>Método Pago</label>
+                <select id="tenderSelect" class="form-control"></select>
+            </div>
+            <div class="form-group col-md-2">
+                <label>Monto Pago</label>
+                <input type="number" class="form-control" id="tenderAmount" min="1" step="0.01">
+            </div>
+            <div class="form-group col-md-2">
+                <label>Acumulación (%)</label>
+                <input type="number" class="form-control" id="accumPercent" value="200">
+            </div>
+        </div>
+        <button type="button" id="sendRequest" class="btn btn-primary btn-block mt-2">Enviar Request</button>
+    </form>
+    <hr>
+    <h5>JSON Request:</h5>
+    <pre id="jsonRequest" class="bg-white border p-2"></pre>
+    <h5 class="mt-4">Response:</h5>
+    <textarea id="responseBox" rows="7" class="form-control mb-3" readonly></textarea>
+    <h5>Tabla de Recompensas (del Response):</h5>
+    <table class="table table-bordered" id="responseTable">
+        <thead>
+        <tr>
+            <th>SequenceNum</th>
+            <th>ItemUPC</th>
+            <th>ItemAccumulatedRewards</th>
+            <th>ItemBasePrice</th>
+            <th>ItemQuantity</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="main.js"></script>
+</body>
+</html>

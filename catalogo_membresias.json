@@ -1,0 +1,16 @@
+[
+    {
+        "MembershipNumber": "10242100318608880",
+        "ExpirationDt": "2022-11-11",
+        "MembershipType": "V",
+        "MembershipTier": "3",
+        "CardHolderType": "P"
+    },
+    {
+        "MembershipNumber": "10234120259973428",
+        "ExpirationDt": "2023-12-31",
+        "MembershipType": "V",
+        "MembershipTier": "3",
+        "CardHolderType": "P"
+    }
+]
