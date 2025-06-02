@@ -1,6 +1,6 @@
 // --- CONFIGURACIÓN PRINCIPAL ---
 const USE_MOCK_RESPONSE = true; // Cambie a false para consumir el servicio real
-const SERVICE_URL = "https://SU_API/TransactionService.svc/ProcessTransaction";
+const SERVICE_URL = "https://192.168.10.231/SAMSMX_DEV/SAMSMX.Loyalty.ProcessTransaction/TransactionService.svc/ProcessTransaction";
 // --- FIN DE CONFIGURACIÓN PRINCIPAL ---
 
 let catalogoArticulos = [];
@@ -182,9 +182,84 @@ function resetearFormulario() {
     $('#articulosContainer').empty();
     agregarFilaArticulo(0);
     recalcularMontoPago();
-    actualizarJsonRequest();
-    $('#responseBox').val('');
-    $('#responseTable tbody').empty();
+    //actualizarJsonRequest();
+    //$('#responseBox').val('');
+    //$('#responseTable tbody').empty();
+}
+
+function ejecutarEnvioRequest(usandoMock) {
+    let now = getFormattedNow();
+    $('#registerTransactionTS').val(now);
+    let request = actualizarJsonRequest();
+
+    if (usandoMock) {
+        let responseMock = {
+            "HeaderResponse": {
+                "Code": 200,
+                "IsSuccessful": true,
+                "MessageCode": "OK",
+                "TechnicalMessage": "",
+                "UserMessage": ""
+            },
+            "RewardsInformation": {
+                "MembershipNumber": "10234120259973428",
+                "MembershipStatus": "A",
+                "TotalAccumulatedRewards": 2365.74,
+                "TotalAvailableRewardsActualPeriod": 0,
+                "RewardsExpirationDateActualPeriod": "21/03/2021",
+                "TotalAvailableRewardsPreviousPeriod": 0,
+                "RewardsExpirationDatePreviousPeriod": "21/03/2020",
+                "TotalPeriodAccumulatedRewards": 2365.74,
+                "TotalPeriodRedeemedRewards": 100,
+                "TotalTransactionAccumulatedRewards": 100.0,
+                "LineItem": [
+                    {
+                        "SequenceNum": 1,
+                        "ItemUPC": "7501030426332",
+                        "ItemAccumulatedRewards": 200.0,
+                        "ItemBasePrice": "20.64",
+                        "ItemQuantity": 1
+                    }
+                ]
+            }
+        };
+        $('#responseBox').val(JSON.stringify(responseMock, null, 2));
+        mostrarTabla(responseMock);
+        setTimeout(resetearFormulario, 500);
+    } else {
+        $.ajax({
+            url: SERVICE_URL,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(request),
+            success: function(response) {
+                $('#responseBox').val(JSON.stringify(response, null, 2));
+                mostrarTabla(response);
+                setTimeout(resetearFormulario, 500);
+            },
+            error: function(xhr, status, error) {
+                $('#responseBox').val("Error al consumir el servicio:\n" + error);
+                $('#responseTable tbody').empty();
+                setTimeout(resetearFormulario, 1500);
+            }
+        });
+    }
+}
+
+function mostrarTabla(response) {
+    let body = $('#responseTable tbody');
+    body.empty();
+    if(response.RewardsInformation && response.RewardsInformation.LineItem) {
+        response.RewardsInformation.LineItem.forEach(function(item) {
+            body.append(`<tr>
+                <td>${item.SequenceNum}</td>
+                <td>${item.ItemUPC}</td>
+                <td>${item.ItemAccumulatedRewards}</td>
+                <td>${item.ItemBasePrice}</td>
+                <td>${item.ItemQuantity}</td>
+            </tr>`);
+        });
+    }
 }
 
 $(document).ready(function() {
@@ -227,80 +302,12 @@ $(document).ready(function() {
         actualizarJsonRequest();
     });
 
-    $('#sendRequest').click(function() {
-        let now = getFormattedNow();
-        $('#registerTransactionTS').val(now);
-        let request = actualizarJsonRequest();
-
-        if (USE_MOCK_RESPONSE) {
-            let responseMock = {
-                "HeaderResponse": {
-                    "Code": 200,
-                    "IsSuccessful": true,
-                    "MessageCode": "OK",
-                    "TechnicalMessage": "",
-                    "UserMessage": ""
-                },
-                "RewardsInformation": {
-                    "MembershipNumber": "10234120259973428",
-                    "MembershipStatus": "A",
-                    "TotalAccumulatedRewards": 2365.74,
-                    "TotalAvailableRewardsActualPeriod": 0,
-                    "RewardsExpirationDateActualPeriod": "21/03/2021",
-                    "TotalAvailableRewardsPreviousPeriod": 0,
-                    "RewardsExpirationDatePreviousPeriod": "21/03/2020",
-                    "TotalPeriodAccumulatedRewards": 2365.74,
-                    "TotalPeriodRedeemedRewards": 100,
-                    "TotalTransactionAccumulatedRewards": 100.0,
-                    "LineItem": [
-                        {
-                            "SequenceNum": 1,
-                            "ItemUPC": "7501030426332",
-                            "ItemAccumulatedRewards": 200.0,
-                            "ItemBasePrice": "20.64",
-                            "ItemQuantity": 1
-                        }
-                    ]
-                }
-            };
-            $('#responseBox').val(JSON.stringify(responseMock, null, 2));
-            mostrarTabla(responseMock);
-        } else {
-            $.ajax({
-                url: SERVICE_URL,
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(request),
-                success: function(response) {
-                    $('#responseBox').val(JSON.stringify(response, null, 2));
-                    mostrarTabla(response);
-                },
-                error: function(xhr, status, error) {
-                    $('#responseBox').val("Error al consumir el servicio:\n" + error);
-                    $('#responseTable tbody').empty();
-                }
-            });
-        }
-
-        // Resetear formulario tras enviar el request
-        setTimeout(resetearFormulario, 500);
+    $('#btnSendMock').click(function() {
+        ejecutarEnvioRequest(true); // true: mock
+    });
+    $('#btnSendReal').click(function() {
+        ejecutarEnvioRequest(false); // false: real
     });
 
     setTimeout(actualizarJsonRequest, 800);
-
-    function mostrarTabla(response) {
-        let body = $('#responseTable tbody');
-        body.empty();
-        if(response.RewardsInformation && response.RewardsInformation.LineItem) {
-            response.RewardsInformation.LineItem.forEach(function(item) {
-                body.append(`<tr>
-                    <td>${item.SequenceNum}</td>
-                    <td>${item.ItemUPC}</td>
-                    <td>${item.ItemAccumulatedRewards}</td>
-                    <td>${item.ItemBasePrice}</td>
-                    <td>${item.ItemQuantity}</td>
-                </tr>`);
-            });
-        }
-    }
 });
