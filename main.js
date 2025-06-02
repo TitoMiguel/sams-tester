@@ -268,6 +268,7 @@ function ejecutarEnvioRequest(pUsarMock) {
     if (pUsarMock) {
         $('#jsonResponseProcessTransaction').val(JSON.stringify(MOCK_RESPONSE_PROCESSTRANSACTION, null, 2));
         mostrarTabla(MOCK_RESPONSE_PROCESSTRANSACTION);
+        mostrarInfoResumenProcessTransaction(MOCK_RESPONSE_PROCESSTRANSACTION);
     } else {
         $.ajax({
             url: SERVICE_URL_PROCESSTRANSACTION,
@@ -282,10 +283,12 @@ function ejecutarEnvioRequest(pUsarMock) {
             success: function(response) {
                 $('#jsonResponseProcessTransaction').val(JSON.stringify(response, null, 2));
                 mostrarTabla(response);
+                mostrarInfoResumenProcessTransaction(response);
             },
             error: function(xhr, status, error) {
+                debugger;
                 $('#jsonResponseProcessTransaction').val("Error al consumir el servicio:\n" + error);
-                $('#responseTableProcessTransaction tbody').empty();
+                $('#responseTableProcessTransaction tbody, #responseInfoTableProcessTransaction tbody').empty();
             }
         });
     }
@@ -305,6 +308,25 @@ function mostrarTabla(pResponse) {
                 <td>${item.ItemQuantity}</td>
             </tr>`)
         );
+}
+function mostrarInfoResumenProcessTransaction(pResponse) {
+    const vBody = $('#responseInfoTableProcessTransaction tbody').empty();
+    if (!pResponse.RewardsInformation) return;
+    const vFields = [
+        'MembershipNumber',
+        'MembershipStatus',
+        'TotalAccumulatedRewards',
+        'TotalAvailableRewardsActualPeriod',
+        'RewardsExpirationDateActualPeriod',
+        'TotalAvailableRewardsPreviousPeriod',
+        'RewardsExpirationDatePreviousPeriod',
+        'TotalPeriodAccumulatedRewards',
+        'TotalPeriodRedeemedRewards',
+        'TotalTransactionAccumulatedRewards'
+    ];
+    vFields.forEach(campo => {
+        vBody.append(`<tr><td>${campo}</td><td>${pResponse.RewardsInformation[campo] ?? ''}</td></tr>`);
+    });
 }
 
 // ======================== FORMULARIO GETBALANCE =======================
@@ -358,6 +380,33 @@ function mostrarGbTabla(pResponse) {
         </tr>`)
     );
 }
+function mostrarGbInfoResumen(pResponse) {
+    const vBody = $('#gbResponseInfoTable tbody').empty();
+    if (!pResponse.RewardsInformation) return;
+    const vFields = [
+        'AfterStatementAccumulatedRewards',
+        'AfterStatementAvailableRewards',
+        'BeforeStatementAccumulatedRewards',
+        'BeforeStatementAvailableRewards',
+        'MembershipNumber',
+        'MembershipStatus',
+        'RewardsExpirationDateActualPeriod',
+        'RewardsExpirationDatePreviousPeriod',
+        'RowCount',
+        'StatementEndDt',
+        'StatementStartDt',
+        'TotalAccumulatedRewards',
+        'TotalAvailablePoints',
+        'TotalAvailableRewardsActualPeriod',
+        'TotalAvailableRewardsPreviousPeriod',
+        'TotalPeriodAccumulatedRewards',
+        'TotalPeriodRedeemedRewards',
+        'TotalTransactionAccumulatedRewards'
+    ];
+    vFields.forEach(campo => {
+        vBody.append(`<tr><td>${campo}</td><td>${pResponse.RewardsInformation[campo] ?? ''}</td></tr>`);
+    });
+}
 
 // ==================== INICIALIZACIÓN Y EVENTOS ====================
 
@@ -384,7 +433,7 @@ $(document).ready(function() {
 
     // GetBalance: Listeners y sub-botones
     $(document).on('change input', '#gbMembershipNumber, #gbExpirationDate, #gbMessageType, #gbStartDt, #gbEndDt', actualizarGbJsonRequest);
-    $('#btnSendMockGetBalance').click(() => { $('#jsonResponseGetBalance').val(JSON.stringify(MOCK_RESPONSE_GETBALANCE, null, 2)); mostrarGbTabla(MOCK_RESPONSE_GETBALANCE); });
+    $('#btnSendMockGetBalance').click(() => { $('#jsonResponseGetBalance').val(JSON.stringify(MOCK_RESPONSE_GETBALANCE, null, 2)); mostrarGbTabla(MOCK_RESPONSE_GETBALANCE); mostrarGbInfoResumen(MOCK_RESPONSE_GETBALANCE); });
     $('#btnSendRealGetBalance').click(function() {
         const vReq = actualizarGbJsonRequest();
         $.ajax({
@@ -397,8 +446,8 @@ $(document).ready(function() {
                 'password': SERVICE_PASS,
                 'Content-Type': 'application/json'
             },
-            success: function(response) { $('#jsonResponseGetBalance').val(JSON.stringify(response, null, 2)); mostrarGbTabla(response); },
-            error: function(xhr, status, error) { $('#jsonResponseGetBalance').val("Error al consumir el servicio:\n" + error); $('#responseTableGetBalance tbody').empty(); }
+            success: function(response) { $('#jsonResponseGetBalance').val(JSON.stringify(response, null, 2)); mostrarGbTabla(response); mostrarGbInfoResumen(response); },
+            error: function(xhr, status, error) { debugger; $('#jsonResponseGetBalance').val("Error al consumir el servicio:\n" + error); $('#responseTableGetBalance tbody, #gbResponseInfoTable tbody').empty(); }
         });
     });
     setTimeout(initGetBalanceForm, 1200);
