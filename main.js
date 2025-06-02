@@ -85,7 +85,7 @@ function actualizarJsonRequest() {
         RequestIsSAF: false
     };
     $('#jsonRequest').text(JSON.stringify(request, null, 2));
-    return request; // Útil para usar en el envío
+    return request;
 }
 
 function getArticulosSeleccionados() {
@@ -119,7 +119,6 @@ function agregarFilaArticulo(index = 0) {
 
     actualizarPrecioCantidadFila(index);
 
-    // Al cambiar artículo, sincronizar selects de todas las filas
     $(`.articulo-fila[data-idx="${index}"] .item-select`).on('change', function() {
         sincronizarArticulosEnTodasLasFilas();
         actualizarPrecioCantidadFila(index);
@@ -201,7 +200,6 @@ $(document).ready(function() {
     $('#channel').val("POS");
     $('#registerTransactionNum').val(1);
 
-    // Cargar catálogos
     $.getJSON('catalogo_articulos.json', function(data) {
         catalogoArticulos = data;
         agregarFilaArticulo(0);
@@ -219,26 +217,22 @@ $(document).ready(function() {
         });
     });
 
-    // Al cambiar cualquier campo relevante, actualizar el JSON
+    $('#membershipSelect, #operationCode, #channel, #registerTransactionNum').on('change input', function() {
         actualizarJsonRequest();
     });
 
-    // Botón para agregar artículos
     $('#addArticuloBtn').click(function() {
         let idx = $('.articulo-fila').length;
         agregarFilaArticulo(idx);
         actualizarJsonRequest();
     });
 
-    // Botón para enviar el request
     $('#sendRequest').click(function() {
-        // Actualizar fecha/hora justo antes de enviar
         let now = getFormattedNow();
         $('#registerTransactionTS').val(now);
         let request = actualizarJsonRequest();
 
         if (USE_MOCK_RESPONSE) {
-            // --- Simulación de respuesta (mock) ---
             let responseMock = {
                 "HeaderResponse": {
                     "Code": 200,
@@ -272,7 +266,6 @@ $(document).ready(function() {
             $('#responseBox').val(JSON.stringify(responseMock, null, 2));
             mostrarTabla(responseMock);
         } else {
-            // --- Consumo del servicio real ---
             $.ajax({
                 url: SERVICE_URL,
                 type: 'POST',
@@ -293,7 +286,6 @@ $(document).ready(function() {
         setTimeout(resetearFormulario, 500);
     });
 
-    // Inicializar el JSON request cuando ya están cargados los catálogos (con retraso breve para asegurar carga)
     setTimeout(actualizarJsonRequest, 800);
 
     function mostrarTabla(response) {
