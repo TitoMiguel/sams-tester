@@ -10,6 +10,27 @@
 <div class="container my-4">
     <h2 class="mb-4">Pruebas - TransactionService.svc/ProcessTransaction</h2>
     <form id="transactionForm">
+        <div class="form-row">
+            <div class="form-group col-md-3">
+                <label>Membresía</label>
+                <select id="membershipSelect" class="form-control"></select>
+            </div>
+            <div class="form-group col-md-3">
+                <label>Operación</label>
+                <select id="operationCode" class="form-control">
+                    <option value="Accumulate">Accumulate</option>
+                    <option value="Redeem">Redeem</option>
+                </select>
+            </div>
+            <div class="form-group col-md-2">
+                <label>Canal</label>
+                <input type="text" class="form-control" id="channel" value="POS" required>
+            </div>
+            <div class="form-group col-md-4">
+                <label>Fecha y hora (TS)</label>
+                <input type="text" class="form-control" id="registerTransactionTS" readonly>
+            </div>
+        </div>
         <div class="form-group">
             <label>Membresía</label>
             <select id="membershipSelect" class="form-control"></select>
@@ -26,6 +47,7 @@
                 <input type="text" class="form-control" id="tenderAmount" readonly>
             </div>
         </div>
+    <button type="button" id="sendRequest" class="btn btn-primary btn-block mt-3">Enviar Request</button>
     </form>
     <h5 class="mt-4">JSON Request:</h5>
     <pre id="jsonRequest" class="bg-white border p-2"></pre>

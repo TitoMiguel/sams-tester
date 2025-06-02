@@ -1,7 +1,25 @@
+// --- CONFIGURACIÓN PRINCIPAL ---
+// Cambie este valor a false para consumir la URL real del servicio
+const USE_MOCK_RESPONSE = true;
+
+// Especifique aquí la URL real del servicio si USE_MOCK_RESPONSE = false
+const SERVICE_URL = "https://SU_API/TransactionService.svc/ProcessTransaction";
+
+// --- FIN DE CONFIGURACIÓN PRINCIPAL ---
 
 let catalogoArticulos = [];
 let catalogoTenders = [];
 let catalogoMembresias = [];
+
+function getFormattedNow() {
+    const now = new Date();
+    return now.getFullYear() + "-" +
+        String(now.getMonth() + 1).padStart(2, '0') + "-" +
+        String(now.getDate()).padStart(2, '0') + " " +
+        String(now.getHours()).padStart(2, '0') + ":" +
+        String(now.getMinutes()).padStart(2, '0') + ":" +
+        String(now.getSeconds()).padStart(2, '0');
+}
 
 function recalcularTotalFila(index) {
     let precio = parseFloat($(`#itemPrice_${index}`).val());
@@ -27,7 +45,7 @@ function actualizarJsonRequest() {
         let artIdx = sel.find('.item-select').val();
         let art = catalogoArticulos[artIdx];
         items.push({
-            SequenceNum: index+1,
+            SequenceNum: index + 1,
             ItemUPC: art.ItemUPC,
             ItemCategory: art.ItemCategory,
             ItemBasePrice: art.ItemBasePrice,
@@ -40,19 +58,22 @@ function actualizarJsonRequest() {
 
     let memb = catalogoMembresias[$('#membershipSelect').val()] || {};
     let tender = catalogoTenders[$('#tenderSelect').val()] || {};
+    let operationCode = $('#operationCode').val() || "Accumulate";
+    let channel = $('#channel').val() || "POS";
+    let ts = $('#registerTransactionTS').val() || getFormattedNow();
 
     let request = {
         APIKey: "187AD8E8-B56E-40B8-951F-08C2CD6CF75D",
-        Channel: "POS",
+        Channel: channel,
         PlayerInfo: memb,
         DetailInfo: {
-            OperationCode: "Accumulate",
+            OperationCode: operationCode,
             TransactionHeader: {
                 CountryCode: "MX",
                 OperatorNumber: 421,
                 RegisterNum: 15,
                 RegisterTransactionNum: 52,
-                RegisterTransactionTS: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                RegisterTransactionTS: ts,
                 RewardsAmount: 30.00,
                 StoreNum: 6264,
                 TransactionAmmount: parseFloat($('#tenderAmount').val()) || 0
@@ -63,10 +84,11 @@ function actualizarJsonRequest() {
                 TenderAmount: parseFloat($('#tenderAmount').val()) || 0
             }]
         },
-        RequestTimeStamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+        RequestTimeStamp: ts,
         RequestIsSAF: false
     };
     $('#jsonRequest').text(JSON.stringify(request, null, 2));
+    return request; // Útil para usar en el envío
 }
 
 function agregarFilaArticulo(index = 0) {
@@ -102,6 +124,11 @@ function actualizarPrecioCantidadFila(index) {
 }
 
 $(document).ready(function() {
+    // Inicializar campos fijos
+    $('#registerTransactionTS').val(getFormattedNow());
+    $('#channel').val("POS");
+
+    // Cargar catálogos
     $.getJSON('catalogo_articulos.json', function(data) {
         catalogoArticulos = data;
         agregarFilaArticulo(0);
@@ -119,8 +146,94 @@ $(document).ready(function() {
         });
     });
 
+    // Al cambiar cualquier campo relevante, actualizar el JSON
+    $('#membershipSelect, #operationCode, #channel').on('change input', function() {
+        actualizarJsonRequest();
+    });
+
+    // Botón para agregar artículos
     $('#addArticuloBtn').click(function() {
         let idx = $('.articulo-fila').length;
         agregarFilaArticulo(idx);
+        actualizarJsonRequest();
     });
+
+    // Botón para enviar el request
+    $('#sendRequest').click(function() {
+        // Actualizar fecha/hora justo antes de enviar
+        let now = getFormattedNow();
+        $('#registerTransactionTS').val(now);
+        let request = actualizarJsonRequest();
+
+        if (USE_MOCK_RESPONSE) {
+            // --- Simulación de respuesta (mock) ---
+            let responseMock = {
+                "HeaderResponse": {
+                    "Code": 200,
+                    "IsSuccessful": true,
+                    "MessageCode": "OK",
+                    "TechnicalMessage": "",
+                    "UserMessage": ""
+                },
+                "RewardsInformation": {
+                    "MembershipNumber": "10234120259973428",
+                    "MembershipStatus": "A",
+                    "TotalAccumulatedRewards": 2365.74,
+                    "TotalAvailableRewardsActualPeriod": 0,
+                    "RewardsExpirationDateActualPeriod": "21/03/2021",
+                    "TotalAvailableRewardsPreviousPeriod": 0,
+                    "RewardsExpirationDatePreviousPeriod": "21/03/2020",
+                    "TotalPeriodAccumulatedRewards": 2365.74,
+                    "TotalPeriodRedeemedRewards": 100,
+                    "TotalTransactionAccumulatedRewards": 100.0,
+                    "LineItem": [
+                        {
+                            "SequenceNum": 1,
+                            "ItemUPC": "7501030426332",
+                            "ItemAccumulatedRewards": 200.0,
+                            "ItemBasePrice": "20.64",
+                            "ItemQuantity": 1
+                        }
+                    ]
+                }
+            };
+            $('#responseBox').val(JSON.stringify(responseMock, null, 2));
+            mostrarTabla(responseMock);
+        } else {
+            // --- Consumo del servicio real ---
+            $.ajax({
+                url: SERVICE_URL,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(request),
+                success: function(response) {
+                    $('#responseBox').val(JSON.stringify(response, null, 2));
+                    mostrarTabla(response);
+                },
+                error: function(xhr, status, error) {
+                    $('#responseBox').val("Error al consumir el servicio:\n" + error);
+                    $('#responseTable tbody').empty();
+                }
+            });
+        }
+    });
+
+    // Inicializar el JSON request cuando ya están cargados los catálogos (con retraso breve para asegurar carga)
+    setTimeout(actualizarJsonRequest, 800);
+
+    function mostrarTabla(response) {
+        let body = $('#responseTable tbody');
+        body.empty();
+        if(response.RewardsInformation && response.RewardsInformation.LineItem) {
+            response.RewardsInformation.LineItem.forEach(function(item) {
+                body.append(`<tr>
+                    <td>${item.SequenceNum}</td>
+                    <td>${item.ItemUPC}</td>
+                    <td>${item.ItemAccumulatedRewards}</td>
+                    <td>${item.ItemBasePrice}</td>
+                    <td>${item.ItemQuantity}</td>
+                </tr>`);
+            });
+        }
+    }
 });
