@@ -1,14 +1,110 @@
+
 let catalogoArticulos = [];
 let catalogoTenders = [];
 let catalogoMembresias = [];
 
+function recalcularTotalFila(index) {
+    let precio = parseFloat($(`#itemPrice_${index}`).val());
+    let cantidad = parseInt($(`#itemQty_${index}`).val());
+    let total = (precio * cantidad) || 0;
+    $(`#itemTotal_${index}`).val(total.toFixed(2));
+    recalcularMontoPago();
+    actualizarJsonRequest();
+}
+
+function recalcularMontoPago() {
+    let suma = 0;
+    $('.item-total').each(function() {
+        suma += parseFloat($(this).val()) || 0;
+    });
+    $('#tenderAmount').val(suma.toFixed(2));
+}
+
+function actualizarJsonRequest() {
+    let items = [];
+    $('.articulo-fila').each(function(index) {
+        let sel = $(this);
+        let artIdx = sel.find('.item-select').val();
+        let art = catalogoArticulos[artIdx];
+        items.push({
+            SequenceNum: index+1,
+            ItemUPC: art.ItemUPC,
+            ItemCategory: art.ItemCategory,
+            ItemBasePrice: art.ItemBasePrice,
+            ItemQuantity: parseInt(sel.find('.item-qty').val()),
+            AccumulationPercentage: parseInt(sel.find('.item-accum').val()),
+            ItemAccumulationLimit: art.ItemAccumulationLimit,
+            CanBeRedeemed: art.CanBeRedeemed
+        });
+    });
+
+    let memb = catalogoMembresias[$('#membershipSelect').val()] || {};
+    let tender = catalogoTenders[$('#tenderSelect').val()] || {};
+
+    let request = {
+        APIKey: "187AD8E8-B56E-40B8-951F-08C2CD6CF75D",
+        Channel: "POS",
+        PlayerInfo: memb,
+        DetailInfo: {
+            OperationCode: "Accumulate",
+            TransactionHeader: {
+                CountryCode: "MX",
+                OperatorNumber: 421,
+                RegisterNum: 15,
+                RegisterTransactionNum: 52,
+                RegisterTransactionTS: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                RewardsAmount: 30.00,
+                StoreNum: 6264,
+                TransactionAmmount: parseFloat($('#tenderAmount').val()) || 0
+            },
+            LineItem: items,
+            Tenders: [{
+                TenderId: tender.TenderId,
+                TenderAmount: parseFloat($('#tenderAmount').val()) || 0
+            }]
+        },
+        RequestTimeStamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+        RequestIsSAF: false
+    };
+    $('#jsonRequest').text(JSON.stringify(request, null, 2));
+}
+
+function agregarFilaArticulo(index = 0) {
+    let selectHtml = `<select class="form-control item-select">${catalogoArticulos.map((a, i) => `<option value="${i}">${a.Descripcion}</option>`)}</select>`;
+    let html = `
+    <div class="form-row articulo-fila mb-2" data-idx="${index}">
+        <div class="col-md-3">${selectHtml}</div>
+        <div class="col-md-2"><input type="text" class="form-control item-price" id="itemPrice_${index}" readonly></div>
+        <div class="col-md-2"><input type="number" class="form-control item-qty" id="itemQty_${index}" min="1" value="1"></div>
+        <div class="col-md-2"><input type="text" class="form-control item-total item-total" id="itemTotal_${index}" readonly></div>
+        <div class="col-md-2"><input type="number" class="form-control item-accum" id="itemAccum_${index}" value="200"></div>
+        <div class="col-md-1 d-flex align-items-center"><button type="button" class="btn btn-danger btn-sm remove-articulo">&times;</button></div>
+    </div>`;
+    $('#articulosContainer').append(html);
+    actualizarPrecioCantidadFila(index);
+
+    $(`#itemQty_${index}, .item-select, .item-accum`).on('input change', function() {
+        actualizarPrecioCantidadFila(index);
+        actualizarJsonRequest();
+    });
+    $('.remove-articulo').last().click(function() {
+        $(this).closest('.articulo-fila').remove();
+        actualizarJsonRequest();
+        recalcularMontoPago();
+    });
+}
+
+function actualizarPrecioCantidadFila(index) {
+    let artIdx = $(`.articulo-fila[data-idx="${index}"] .item-select`).val();
+    let art = catalogoArticulos[artIdx];
+    $(`#itemPrice_${index}`).val(art.ItemBasePrice);
+    recalcularTotalFila(index);
+}
+
 $(document).ready(function() {
-    // Cargar catálogos
     $.getJSON('catalogo_articulos.json', function(data) {
         catalogoArticulos = data;
-        $.each(catalogoArticulos, function(i, item) {
-            $('#itemSelect').append(`<option value="${i}">${item.Descripcion} (${item.ItemUPC})</option>`);
-        });
+        agregarFilaArticulo(0);
     });
     $.getJSON('catalogo_tender.json', function(data) {
         catalogoTenders = data;
@@ -23,111 +119,8 @@ $(document).ready(function() {
         });
     });
 
-    $('#sendRequest').click(function() {
-        // Armar JSON request dinámicamente
-        let memb = catalogoMembresias[$('#membershipSelect').val()];
-        let art = catalogoArticulos[$('#itemSelect').val()];
-        let tender = catalogoTenders[$('#tenderSelect').val()];
-        let now = new Date($('#registerTransactionTS').val());
-        let ts = now.toISOString().replace('T',' ').substring(0,19);
-
-        let request = {
-            APIKey: "187AD8E8-B56E-40B8-951F-08C2CD6CF75D",
-            Channel: $('#channel').val(),
-            PlayerInfo: memb,
-            DetailInfo: {
-                OperationCode: $('#operationCode').val(),
-                TransactionHeader: {
-                    CountryCode: "MX",
-                    OperatorNumber: 421,
-                    RegisterNum: 15,
-                    RegisterTransactionNum: 52,
-                    RegisterTransactionTS: ts,
-                    RewardsAmount: 30.00,
-                    StoreNum: 6264,
-                    TransactionAmmount: parseFloat($('#tenderAmount').val())
-                },
-                LineItem: [{
-                    SequenceNum: 1,
-                    ItemUPC: art.ItemUPC,
-                    ItemCategory: art.ItemCategory,
-                    ItemBasePrice: art.ItemBasePrice,
-                    ItemQuantity: parseInt($('#itemQty').val()),
-                    AccumulationPercentage: parseInt($('#accumPercent').val()),
-                    ItemAccumulationLimit: art.ItemAccumulationLimit,
-                    CanBeRedeemed: art.CanBeRedeemed
-                }],
-                Tenders: [{
-                    TenderId: tender.TenderId,
-                    TenderAmount: parseFloat($('#tenderAmount').val())
-                }]
-            },
-            RequestTimeStamp: ts,
-            RequestIsSAF: false
-        };
-        $('#jsonRequest').text(JSON.stringify(request, null, 2));
-
-        // Simulación de llamada AJAX (sustituya la URL por la real en ambiente de pruebas)
-        $.ajax({
-            url: '/ruta/TransactionService.svc/ProcessTransaction', // Sustituir por endpoint real
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(request),
-            success: function(response) {
-                $('#responseBox').val(JSON.stringify(response, null, 2));
-                mostrarTabla(response);
-            },
-            error: function() {
-                // Simular respuesta si falla (mock)
-                let mock = {
-                    "HeaderResponse": {
-                        "Code": 200,
-                        "IsSuccessful": true,
-                        "MessageCode": "OK",
-                        "TechnicalMessage": "",
-                        "UserMessage": ""
-                    },
-                    "RewardsInformation": {
-                        "MembershipNumber": memb.MembershipNumber,
-                        "MembershipStatus": "A",
-                        "TotalAccumulatedRewards": 2365.74,
-                        "TotalAvailableRewardsActualPeriod": 0,
-                        "RewardsExpirationDateActualPeriod": "21/03/2021",
-                        "TotalAvailableRewardsPreviousPeriod": 0,
-                        "RewardsExpirationDatePreviousPeriod": "21/03/2020",
-                        "TotalPeriodAccumulatedRewards": 2365.74,
-                        "TotalPeriodRedeemedRewards": 100,
-                        "TotalTransactionAccumulatedRewards": 100.0,
-                        "LineItem": [
-                            {
-                                "SequenceNum": 1,
-                                "ItemUPC": art.ItemUPC,
-                                "ItemAccumulatedRewards": 200.0,
-                                "ItemBasePrice": art.ItemBasePrice,
-                                "ItemQuantity": parseInt($('#itemQty').val())
-                            }
-                        ]
-                    }
-                };
-                $('#responseBox').val(JSON.stringify(mock, null, 2));
-                mostrarTabla(mock);
-            }
-        });
+    $('#addArticuloBtn').click(function() {
+        let idx = $('.articulo-fila').length;
+        agregarFilaArticulo(idx);
     });
-
-    function mostrarTabla(response) {
-        let body = $('#responseTable tbody');
-        body.empty();
-        if(response.RewardsInformation && response.RewardsInformation.LineItem) {
-            response.RewardsInformation.LineItem.forEach(function(item) {
-                body.append(`<tr>
-                    <td>${item.SequenceNum}</td>
-                    <td>${item.ItemUPC}</td>
-                    <td>${item.ItemAccumulatedRewards}</td>
-                    <td>${item.ItemBasePrice}</td>
-                    <td>${item.ItemQuantity}</td>
-                </tr>`);
-            });
-        }
-    }
 });

@@ -1,5 +1,14 @@
 [
-    {"TenderId": "13", "Descripcion": "Efectivo"},
-    {"TenderId": "01", "Descripcion": "Tarjeta de Crédito"},
-    {"TenderId": "99", "Descripcion": "Recompensas"}
+    {
+        "TenderId": "13",
+        "Descripcion": "Efectivo"
+    },
+    {
+        "TenderId": "01",
+        "Descripcion": "Tarjeta de Crédito"
+    },
+    {
+        "TenderId": "99",
+        "Descripcion": "Recompensas"
+    }
 ]

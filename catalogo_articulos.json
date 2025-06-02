@@ -1,18 +1,82 @@
 [
     {
-        "ItemUPC": "7501030421332",
-        "ItemCategory": "0015",
-        "Descripcion": "Cereal Granola 500g",
-        "ItemBasePrice": 340.64,
+        "ItemUPC": "7501111111001",
+        "ItemCategory": "1001",
+        "Descripcion": "Cereal Multigrano 800g",
+        "ItemBasePrice": 85.5,
+        "ItemAccumulationLimit": 50,
+        "CanBeRedeemed": true
+    },
+    {
+        "ItemUPC": "7501111111002",
+        "ItemCategory": "1002",
+        "Descripcion": "Leche Entera 1L",
+        "ItemBasePrice": 23.9,
         "ItemAccumulationLimit": 100,
         "CanBeRedeemed": true
     },
     {
-        "ItemUPC": "7501030426332",
-        "ItemCategory": "0020",
-        "Descripcion": "Leche Entera 1L",
-        "ItemBasePrice": 25.00,
+        "ItemUPC": "7501111111003",
+        "ItemCategory": "1003",
+        "Descripcion": "Aceite Vegetal 900ml",
+        "ItemBasePrice": 42.7,
         "ItemAccumulationLimit": 100,
+        "CanBeRedeemed": true
+    },
+    {
+        "ItemUPC": "7501111111004",
+        "ItemCategory": "1004",
+        "Descripcion": "Arroz Super Premium 2kg",
+        "ItemBasePrice": 64.3,
+        "ItemAccumulationLimit": 80,
+        "CanBeRedeemed": true
+    },
+    {
+        "ItemUPC": "7501111111005",
+        "ItemCategory": "1005",
+        "Descripcion": "Galletas Chocolate 400g",
+        "ItemBasePrice": 39.8,
+        "ItemAccumulationLimit": 75,
+        "CanBeRedeemed": true
+    },
+    {
+        "ItemUPC": "7501111111006",
+        "ItemCategory": "1006",
+        "Descripcion": "Papel Higiénico 24 rollos",
+        "ItemBasePrice": 120.0,
+        "ItemAccumulationLimit": 40,
+        "CanBeRedeemed": true
+    },
+    {
+        "ItemUPC": "7501111111007",
+        "ItemCategory": "1007",
+        "Descripcion": "Shampoo Familiar 1L",
+        "ItemBasePrice": 55.9,
+        "ItemAccumulationLimit": 100,
+        "CanBeRedeemed": true
+    },
+    {
+        "ItemUPC": "7501111111008",
+        "ItemCategory": "1008",
+        "Descripcion": "Detergente Líquido 5L",
+        "ItemBasePrice": 98.75,
+        "ItemAccumulationLimit": 60,
+        "CanBeRedeemed": true
+    },
+    {
+        "ItemUPC": "7501111111009",
+        "ItemCategory": "1009",
+        "Descripcion": "Refresco en Polvo 1kg",
+        "ItemBasePrice": 44.0,
+        "ItemAccumulationLimit": 120,
+        "CanBeRedeemed": true
+    },
+    {
+        "ItemUPC": "7501111111010",
+        "ItemCategory": "1010",
+        "Descripcion": "Atún en Agua 6 pack",
+        "ItemBasePrice": 89.5,
+        "ItemAccumulationLimit": 50,
         "CanBeRedeemed": true
     }
 ]
