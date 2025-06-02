@@ -1,10 +1,6 @@
 // --- CONFIGURACIÓN PRINCIPAL ---
-// Cambie este valor a false para consumir la URL real del servicio
-const USE_MOCK_RESPONSE = true;
-
-// Especifique aquí la URL real del servicio si USE_MOCK_RESPONSE = false
+const USE_MOCK_RESPONSE = true; // Cambie a false para consumir el servicio real
 const SERVICE_URL = "https://SU_API/TransactionService.svc/ProcessTransaction";
-
 // --- FIN DE CONFIGURACIÓN PRINCIPAL ---
 
 let catalogoArticulos = [];
@@ -91,11 +87,29 @@ function actualizarJsonRequest() {
     return request; // Útil para usar en el envío
 }
 
+// --- NUEVO: Evitar artículos repetidos y actualizar selects dinámicamente ---
+
+function getArticulosSeleccionados() {
+    let indices = [];
+    $('.articulo-fila').each(function() {
+        let idx = $(this).find('.item-select').val();
+        if (idx !== undefined && idx !== null) indices.push(idx);
+    });
+    return indices.map(i => parseInt(i));
+}
+
 function agregarFilaArticulo(index = 0) {
-    let selectHtml = `<select class="form-control item-select">${catalogoArticulos.map((a, i) => `<option value="${i}">${a.Descripcion}</option>`)}</select>`;
+    let seleccionados = getArticulosSeleccionados();
+    let options = catalogoArticulos.map((a, i) => {
+        return seleccionados.includes(i) ? '' : `<option value="${i}">${a.Descripcion}</option>`;
+    }).join('');
+    if (!options) return;
+
     let html = `
     <div class="form-row articulo-fila mb-2" data-idx="${index}">
-        <div class="col-md-3">${selectHtml}</div>
+        <div class="col-md-3">
+            <select class="form-control item-select">${options}</select>
+        </div>
         <div class="col-md-2"><input type="text" class="form-control item-price" id="itemPrice_${index}" readonly></div>
         <div class="col-md-2"><input type="number" class="form-control item-qty" id="itemQty_${index}" min="1" value="1"></div>
         <div class="col-md-2"><input type="text" class="form-control item-total item-total" id="itemTotal_${index}" readonly></div>
@@ -103,18 +117,55 @@ function agregarFilaArticulo(index = 0) {
         <div class="col-md-1 d-flex align-items-center"><button type="button" class="btn btn-danger btn-sm remove-articulo">&times;</button></div>
     </div>`;
     $('#articulosContainer').append(html);
+
     actualizarPrecioCantidadFila(index);
 
-    $(`#itemQty_${index}, .item-select, .item-accum`).on('input change', function() {
+    // Al cambiar artículo, sincronizar selects de todas las filas
+    $(`.articulo-fila[data-idx="${index}"] .item-select`).on('change', function() {
+        sincronizarArticulosEnTodasLasFilas();
         actualizarPrecioCantidadFila(index);
         actualizarJsonRequest();
     });
+
+    $(`#itemQty_${index}, #itemAccum_${index}`).on('input change', function() {
+        actualizarPrecioCantidadFila(index);
+        actualizarJsonRequest();
+    });
+
     $('.remove-articulo').last().click(function() {
         $(this).closest('.articulo-fila').remove();
+        sincronizarArticulosEnTodasLasFilas();
         actualizarJsonRequest();
         recalcularMontoPago();
+        checarBotonAgregarArticulo();
     });
+
+    checarBotonAgregarArticulo();
 }
+
+function sincronizarArticulosEnTodasLasFilas() {
+    let seleccionados = getArticulosSeleccionados();
+    $('.articulo-fila').each(function() {
+        let $select = $(this).find('.item-select');
+        let actual = $select.val();
+        let options = catalogoArticulos.map((a, i) => {
+            let disabled = (seleccionados.includes(i) && i != actual);
+            return `<option value="${i}"${disabled ? ' disabled' : ''}${i == actual ? ' selected' : ''}>${a.Descripcion}</option>`;
+        }).join('');
+        $select.html(options);
+    });
+    checarBotonAgregarArticulo();
+}
+
+function checarBotonAgregarArticulo() {
+    if (getArticulosSeleccionados().length >= catalogoArticulos.length) {
+        $('#addArticuloBtn').prop('disabled', true);
+    } else {
+        $('#addArticuloBtn').prop('disabled', false);
+    }
+}
+
+// --- FIN de nueva lógica ---
 
 function actualizarPrecioCantidadFila(index) {
     let artIdx = $(`.articulo-fila[data-idx="${index}"] .item-select`).val();
@@ -124,7 +175,15 @@ function actualizarPrecioCantidadFila(index) {
 }
 
 $(document).ready(function() {
-    // Inicializar campos fijos
+    // Ajustar alto de pre y textarea para igualarlos visualmente
+    $('#jsonRequest, #responseBox').css({
+        'min-height': '140px',
+        'height': '180px',
+        'max-height': '220px',
+        'overflow-y': 'auto',
+        'resize': 'none'
+    });
+
     $('#registerTransactionTS').val(getFormattedNow());
     $('#channel').val("POS");
 
