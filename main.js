@@ -232,6 +232,11 @@ function ejecutarEnvioRequest(usandoMock) {
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(request),
+            headers: {
+                'userName': 'SAMSMXService.User',
+                'password': 'SAMSMXService.Pass',
+                'Content-Type': 'application/json'
+            },
             success: function(response) {
                 $('#responseBox').val(JSON.stringify(response, null, 2));
                 mostrarTabla(response);
