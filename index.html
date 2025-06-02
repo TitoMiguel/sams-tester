@@ -20,7 +20,6 @@
         resize: none;
     }
     </style>
-
 </head>
 <body class="bg-light">
 <div class="container my-4">
@@ -46,6 +45,10 @@
                 <label>Fecha y hora (TS)</label>
                 <input type="text" class="form-control" id="registerTransactionTS" readonly>
             </div>
+            <div class="form-group col-md-2">
+                <label>No. Transacción</label>
+                <input type="number" class="form-control" id="registerTransactionNum" min="1" value="1">
+            </div>
         </div>
         <div id="articulosContainer"></div>
         <button type="button" class="btn btn-success mb-2" id="addArticuloBtn">+ Agregar artículo</button>
@@ -63,9 +66,9 @@
     </form>
     <h5 class="mt-4">JSON Request:</h5>
     <pre id="jsonRequest" class="bg-white border p-2"></pre>
-    <h5>Response:</h5>
+    <h5>JSON Response:</h5>
     <textarea id="responseBox" rows="7" class="form-control mb-3" readonly></textarea>
-    <h5>Tabla de Recompensas (del Response):</h5>
+    <h5>Tabla de Recompensas (del JSON Response):</h5>
     <table class="table table-bordered" id="responseTable">
         <thead>
         <tr>

@@ -57,6 +57,7 @@ function actualizarJsonRequest() {
     let operationCode = $('#operationCode').val() || "Accumulate";
     let channel = $('#channel').val() || "POS";
     let ts = $('#registerTransactionTS').val() || getFormattedNow();
+    let regTransNum = parseInt($('#registerTransactionNum').val()) || 1;
 
     let request = {
         APIKey: "187AD8E8-B56E-40B8-951F-08C2CD6CF75D",
@@ -68,7 +69,7 @@ function actualizarJsonRequest() {
                 CountryCode: "MX",
                 OperatorNumber: 421,
                 RegisterNum: 15,
-                RegisterTransactionNum: 52,
+                RegisterTransactionNum: regTransNum,
                 RegisterTransactionTS: ts,
                 RewardsAmount: 30.00,
                 StoreNum: 6264,
@@ -86,8 +87,6 @@ function actualizarJsonRequest() {
     $('#jsonRequest').text(JSON.stringify(request, null, 2));
     return request; // Útil para usar en el envío
 }
-
-// --- NUEVO: Evitar artículos repetidos y actualizar selects dinámicamente ---
 
 function getArticulosSeleccionados() {
     let indices = [];
@@ -165,8 +164,6 @@ function checarBotonAgregarArticulo() {
     }
 }
 
-// --- FIN de nueva lógica ---
-
 function actualizarPrecioCantidadFila(index) {
     let artIdx = $(`.articulo-fila[data-idx="${index}"] .item-select`).val();
     let art = catalogoArticulos[artIdx];
@@ -174,8 +171,24 @@ function actualizarPrecioCantidadFila(index) {
     recalcularTotalFila(index);
 }
 
+function resetearFormulario() {
+    // Resetea todos los campos al estado inicial
+    $('#membershipSelect').prop('selectedIndex', 0);
+    $('#operationCode').prop('selectedIndex', 0);
+    $('#channel').val('POS');
+    $('#registerTransactionTS').val(getFormattedNow());
+    $('#registerTransactionNum').val(1);
+    $('#tenderSelect').prop('selectedIndex', 0);
+    $('#tenderAmount').val('');
+    $('#articulosContainer').empty();
+    agregarFilaArticulo(0);
+    recalcularMontoPago();
+    actualizarJsonRequest();
+    $('#responseBox').val('');
+    $('#responseTable tbody').empty();
+}
+
 $(document).ready(function() {
-    // Ajustar alto de pre y textarea para igualarlos visualmente
     $('#jsonRequest, #responseBox').css({
         'min-height': '140px',
         'height': '180px',
@@ -186,6 +199,7 @@ $(document).ready(function() {
 
     $('#registerTransactionTS').val(getFormattedNow());
     $('#channel').val("POS");
+    $('#registerTransactionNum').val(1);
 
     // Cargar catálogos
     $.getJSON('catalogo_articulos.json', function(data) {
@@ -206,7 +220,6 @@ $(document).ready(function() {
     });
 
     // Al cambiar cualquier campo relevante, actualizar el JSON
-    $('#membershipSelect, #operationCode, #channel').on('change input', function() {
         actualizarJsonRequest();
     });
 
@@ -275,6 +288,9 @@ $(document).ready(function() {
                 }
             });
         }
+
+        // Resetear formulario tras enviar el request
+        setTimeout(resetearFormulario, 500);
     });
 
     // Inicializar el JSON request cuando ya están cargados los catálogos (con retraso breve para asegurar carga)
