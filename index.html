@@ -8,14 +8,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.1/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <style>
-    #jsonRequest {
+    #jsonRequestProcessTransaction {
         min-height: 140px;
         height: 180px;
         max-height: 220px;
         overflow-y: auto;
         resize: none;
     }
-    #responseBox {
+    #jsonResponseProcessTransaction {
         min-height: 140px;
         height: 180px;
         max-height: 220px;
@@ -27,7 +27,7 @@
 <body class="bg-light">
 <div class="container my-4">
     <h2 class="mb-4">Pruebas - TransactionService.svc/ProcessTransaction</h2>
-    <form id="transactionForm">
+    <form id="formProcessTransaction">
         <div class="form-row">
             <div class="form-group col-md-3">
                 <label>Membresía</label>
@@ -67,20 +67,19 @@
         </div>
         <div class="btn-group mt-3" id="sendRequestGroup">
             <button type="button" class="btn btn-primary dropdown-toggle btn-block" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                Enviar Request
+                Enviar Request ProcessTransaction
             </button>
-            <div class="dropdown-menu w-100 text-center">
-                <button type="button" class="dropdown-item btn btn-sm btn-success" id="btnSendMock">Probar con Mock</button>
-                <button type="button" class="dropdown-item btn btn-sm btn-info" id="btnSendReal">Probar con Sitio Real</button>
+            <div class="dropdown-menu w-100">
+                <button type="button" class="dropdown-item btn btn-sm btn-success" id="btnSendMockProcessTransaction">Probar con Mock</button>
+                <button type="button" class="dropdown-item btn btn-sm btn-info" id="btnSendRealProcessTransaction">Probar con Sitio Real</button>
             </div>
         </div>
     </form>
-    <h5 class="mt-4">JSON Request:</h5>
-    <pre id="jsonRequest" class="bg-white border p-2"></pre>
-    <h5>JSON Response:</h5>
-    <textarea id="responseBox" rows="7" class="form-control mb-3" readonly></textarea>
-    <h5>Tabla de Recompensas (del JSON Response):</h5>
-    <table class="table table-bordered" id="responseTable">
+    <h5 class="mt-4">JSON Request ProcessTransaction:</h5>
+    <pre id="jsonRequestProcessTransaction" class="bg-white border p-2"></pre>
+    <h5>JSON Response ProcessTransaction:</h5>
+    <textarea id="jsonResponseProcessTransaction" rows="7" class="form-control mb-3" readonly></textarea>
+    <table class="table table-bordered" id="responseTableProcessTransaction">
         <thead>
         <tr>
             <th>SequenceNum</th>
@@ -88,6 +87,66 @@
             <th>ItemAccumulatedRewards</th>
             <th>ItemBasePrice</th>
             <th>ItemQuantity</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <hr class="my-4">
+    <h2 class="mb-4">Pruebas - TransactionService.svc/GetBalance</h2>
+    <form id="formGetBalance">
+        <div class="form-row">
+            <div class="form-group col-md-3">
+                <label>Membresía</label>
+                <select id="gbMembershipNumber" class="form-control"></select>
+            </div>
+            <div class="form-group col-md-3">
+                <label>Fecha Expiración</label>
+                <input type="date" class="form-control" id="gbExpirationDate" value="">
+            </div>
+            <div class="form-group col-md-2">
+                <label>Tipo Mensaje</label>
+                <select id="gbMessageType" class="form-control">
+                    <option value="periodo">periodo</option>
+                    <option value="actual">actual</option>
+                </select>
+            </div>
+            <div class="form-group col-md-2">
+                <label>Fecha Inicio</label>
+                <input type="date" class="form-control" id="gbStartDt" value="">
+            </div>
+            <div class="form-group col-md-2">
+                <label>Fecha Fin</label>
+                <input type="date" class="form-control" id="gbEndDt" value="">
+            </div>
+        </div>
+        <div class="btn-group mt-3" id="sendGetBalanceGroup">
+            <button type="button" class="btn btn-primary dropdown-toggle btn-block" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Enviar Request GetBalance
+            </button>
+            <div class="dropdown-menu w-100">
+                <button type="button" class="dropdown-item btn btn-sm btn-success" id="btnSendMockGetBalance">Probar con Mock</button>
+                <button type="button" class="dropdown-item btn btn-sm btn-info" id="btnSendRealGetBalance">Probar con Sitio Real</button>
+            </div>
+        </div>
+    </form>
+    <h5 class="mt-4">JSON Request GetBalance:</h5>
+    <pre id="jsonRequestGetBalance" class="bg-white border p-2"></pre>
+    <h5>JSON Response GetBalance:</h5>
+    <textarea id="jsonResponseGetBalance" rows="7" class="form-control mb-3" readonly></textarea>
+    <table class="table table-bordered" id="responseTableGetBalance">
+        <thead>
+        <tr>
+            <th>ProcessedDate</th>
+            <th>RegisterNumber</th>
+            <th>RegisterTransactionNumber</th>
+            <th>RegisterTransactionTS</th>
+            <th>RewardsStatus</th>
+            <th>StoreNumber</th>
+            <th>TransactionAmount</th>
+            <th>TransactionMembershipCard</th>
+            <th>TransactionMoneyAmount</th>
+            <th>TransactionRewardsAmount</th>
+            <th>TransactionType</th>
         </tr>
         </thead>
         <tbody></tbody>

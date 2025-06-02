@@ -1,135 +1,222 @@
-// --- CONFIGURACIÓN PRINCIPAL ---
-const USE_MOCK_RESPONSE = true; // Cambie a false para consumir el servicio real
-const SERVICE_URL = "https://192.168.10.231/SAMSMX_DEV/SAMSMX.Loyalty.ProcessTransaction/TransactionService.svc/ProcessTransaction";
-// --- FIN DE CONFIGURACIÓN PRINCIPAL ---
+// ==================== CONFIGURACIÓN PRINCIPAL ====================
+const SERVICE_URL_PROCESSTRANSACTION = "https://192.168.10.231/SAMSMX_DEV/SAMSMX.Loyalty.ProcessTransaction/TransactionService.svc/ProcessTransaction";
+const SERVICE_URL_GETBALANCE        = "https://192.168.10.231/SAMSMX_DEV/SAMSMX.Loyalty.ProcessTransaction/TransactionService.svc/GetBalance";
+const SERVICE_USER                  = "SAMSMXService.User";
+const SERVICE_PASS                  = "SAMSMXService.Pass";
+const API_KEY                       = "187AD8E8-B56E-40B8-951F-08C2CD6CF75D";
+const COUNTRY_CODE                  = "MX";
+const OPERATOR_NUMBER               = 421;
+const REGISTER_NUM                  = 15;
+const STORE_NUM                     = 6264;
+const REQUEST_IS_SAF                = false;
+// ==================== FIN CONFIGURACIÓN PRINCIPAL =================
 
-let catalogoArticulos = [];
-let catalogoTenders = [];
-let catalogoMembresias = [];
+let catalogoArticulos = [], catalogoTenders = [], catalogoMembresias = [];
 
+// --- MOCK RESPUESTAS ---
+const MOCK_RESPONSE_PROCESSTRANSACTION = {
+    "HeaderResponse": {
+        "Code": 200,
+        "IsSuccessful": true,
+        "MessageCode": "OK",
+        "TechnicalMessage": "",
+        "UserMessage": ""
+    },
+    "RewardsInformation": {
+        "MembershipNumber": "10234120259973428",
+        "MembershipStatus": "A",
+        "TotalAccumulatedRewards": 2365.74,
+        "TotalAvailableRewardsActualPeriod": 0,
+        "RewardsExpirationDateActualPeriod": "21/03/2021",
+        "TotalAvailableRewardsPreviousPeriod": 0,
+        "RewardsExpirationDatePreviousPeriod": "21/03/2020",
+        "TotalPeriodAccumulatedRewards": 2365.74,
+        "TotalPeriodRedeemedRewards": 100,
+        "TotalTransactionAccumulatedRewards": 100.0,
+        "LineItem": [
+            {
+                "SequenceNum": 1,
+                "ItemUPC": "7501030426332",
+                "ItemAccumulatedRewards": 200.0,
+                "ItemBasePrice": "20.64",
+                "ItemQuantity": 1
+            }
+        ]
+    }
+};
+const MOCK_RESPONSE_GETBALANCE = {
+    "HeaderResponse": {
+        "Code": 200,
+        "IsSuccessful": true,
+        "MessageCode": "",
+        "TechnicalMessage": "",
+        "UserMessage": ""
+    },
+    "RewardsInformation": {
+        "AccountStatement": [
+            {
+                "ProcessedDate": "/Date(1715726291977-0600)/",
+                "RegisterNumber": "15",
+                "RegisterTransactionNumber": "52",
+                "RegisterTransactionTS": "2023-07-18 09:00:11",
+                "RequestTimeStamp": "/Date(-62135575200000-0600)/",
+                "RewardsStatus": "Accumulate",
+                "StoreNumber": "6264",
+                "TransactionAmount": 0,
+                "TransactionMembershipCard": "10242100318608880",
+                "TransactionMoneyAmount": 688,
+                "TransactionRewardsAmount": 10.07,
+                "TransactionType": "Accumulate"
+            },
+            {
+                "ProcessedDate": "/Date(1715726326413-0600)/",
+                "RegisterNumber": "15",
+                "RegisterTransactionNumber": "52",
+                "RegisterTransactionTS": "2023-07-18 09:00:12",
+                "RequestTimeStamp": "/Date(-62135575200000-0600)/",
+                "RewardsStatus": "Accumulate",
+                "StoreNumber": "6264",
+                "TransactionAmount": 0,
+                "TransactionMembershipCard": "10242200318608880",
+                "TransactionMoneyAmount": 688,
+                "TransactionRewardsAmount": 10.07,
+                "TransactionType": "Accumulate"
+            }
+        ],
+        "AfterStatementAccumulatedRewards": 0,
+        "AfterStatementAvailableRewards": 0,
+        "BeforeStatementAccumulatedRewards": 0,
+        "BeforeStatementAvailableRewards": 0,
+        "MembershipNumber": "10242100318608880",
+        "MembershipStatus": "I",
+        "RewardsExpirationDateActualPeriod": "1900-01-01",
+        "RewardsExpirationDatePreviousPeriod": "1900-01-01",
+        "RowCount": 0,
+        "StatementEndDt": null,
+        "StatementStartDt": null,
+        "TotalAccumulatedRewards": 23.69,
+        "TotalAvailablePoints": 0,
+        "TotalAvailableRewardsActualPeriod": 0,
+        "TotalAvailableRewardsPreviousPeriod": 0,
+        "TotalPeriodAccumulatedRewards": 23.69,
+        "TotalPeriodRedeemedRewards": 0,
+        "TotalTransactionAccumulatedRewards": 0
+    }
+};
+
+// ======================== UTILITARIOS =============================
+// Formato de fecha/hora actual (YYYY-MM-DD HH:mm:ss)
 function getFormattedNow() {
-    const now = new Date();
-    return now.getFullYear() + "-" +
-        String(now.getMonth() + 1).padStart(2, '0') + "-" +
-        String(now.getDate()).padStart(2, '0') + " " +
-        String(now.getHours()).padStart(2, '0') + ":" +
-        String(now.getMinutes()).padStart(2, '0') + ":" +
-        String(now.getSeconds()).padStart(2, '0');
+    const vNow = new Date();
+    return `${vNow.getFullYear()}-${String(vNow.getMonth() + 1).padStart(2, '0')}-${String(vNow.getDate()).padStart(2, '0')} `
+         + `${String(vNow.getHours()).padStart(2, '0')}:${String(vNow.getMinutes()).padStart(2, '0')}:${String(vNow.getSeconds()).padStart(2, '0')}`;
 }
 
-function recalcularTotalFila(index) {
-    let precio = parseFloat($(`#itemPrice_${index}`).val());
-    let cantidad = parseInt($(`#itemQty_${index}`).val());
-    let total = (precio * cantidad) || 0;
-    $(`#itemTotal_${index}`).val(total.toFixed(2));
+// Cookies get/set para persistencia local (usado con No. Transacción)
+function setCookie(pName, pValue, pDays = 30) {
+    const vDate = new Date();
+    vDate.setTime(vDate.getTime() + (pDays*24*60*60*1000));
+    document.cookie = `${pName}=${pValue};expires=${vDate.toUTCString()};path=/`;
+}
+function getCookie(pName) {
+    const vName = pName + "=", vDecoded = decodeURIComponent(document.cookie), vArr = vDecoded.split(';');
+    for(let vCookie of vArr) {
+        vCookie = vCookie.trim();
+        if (vCookie.indexOf(vName) === 0) return vCookie.substring(vName.length);
+    }
+    return "";
+}
+
+// ======================= FORMULARIO PROCESSTRANSACTION ===============
+
+// Recalcula el total de cada fila, el monto de pago total y actualiza el request.
+function recalcularTotalFila(pIndex) {
+    const vPrecio = parseFloat($(`#itemPrice_${pIndex}`).val()),
+          vCantidad = parseInt($(`#itemQty_${pIndex}`).val()),
+          vTotal = (vPrecio * vCantidad) || 0;
+    $(`#itemTotal_${pIndex}`).val(vTotal.toFixed(2));
     recalcularMontoPago();
     actualizarJsonRequest();
 }
-
 function recalcularMontoPago() {
-    let suma = 0;
-    $('.item-total').each(function() {
-        suma += parseFloat($(this).val()) || 0;
-    });
-    $('#tenderAmount').val(suma.toFixed(2));
+    let vSuma = 0;
+    $('.item-total').each(function() { vSuma += parseFloat($(this).val()) || 0; });
+    $('#tenderAmount').val(vSuma.toFixed(2));
 }
 
+// Genera el JSON del request principal (ProcessTransaction)
 function actualizarJsonRequest() {
-    let items = [];
-    $('.articulo-fila').each(function(index) {
-        let sel = $(this);
-        let artIdx = sel.find('.item-select').val();
-        let art = catalogoArticulos[artIdx];
-        items.push({
-            SequenceNum: index + 1,
-            ItemUPC: art.ItemUPC,
-            ItemCategory: art.ItemCategory,
-            ItemBasePrice: art.ItemBasePrice,
-            ItemQuantity: parseInt(sel.find('.item-qty').val()),
-            AccumulationPercentage: parseInt(sel.find('.item-accum').val()),
-            ItemAccumulationLimit: art.ItemAccumulationLimit,
-            CanBeRedeemed: art.CanBeRedeemed
-        });
-    });
+    const vItems = $('.articulo-fila').map(function(i) {
+        const vSel = $(this), vArtIdx = vSel.find('.item-select').val(), vArt = catalogoArticulos[vArtIdx];
+        return {
+            SequenceNum: i + 1, ItemUPC: vArt.ItemUPC, ItemCategory: vArt.ItemCategory,
+            ItemBasePrice: vArt.ItemBasePrice, ItemQuantity: parseInt(vSel.find('.item-qty').val()),
+            AccumulationPercentage: parseInt(vSel.find('.item-accum').val()),
+            ItemAccumulationLimit: vArt.ItemAccumulationLimit, CanBeRedeemed: vArt.CanBeRedeemed
+        };
+    }).get();
 
-    let memb = catalogoMembresias[$('#membershipSelect').val()] || {};
-    let tender = catalogoTenders[$('#tenderSelect').val()] || {};
-    let operationCode = $('#operationCode').val() || "Accumulate";
-    let channel = $('#channel').val() || "POS";
-    let ts = $('#registerTransactionTS').val() || getFormattedNow();
-    let regTransNum = parseInt($('#registerTransactionNum').val()) || 1;
-
-    let request = {
-        APIKey: "187AD8E8-B56E-40B8-951F-08C2CD6CF75D",
-        Channel: channel,
-        PlayerInfo: memb,
-        DetailInfo: {
-            OperationCode: operationCode,
-            TransactionHeader: {
-                CountryCode: "MX",
-                OperatorNumber: 421,
-                RegisterNum: 15,
-                RegisterTransactionNum: regTransNum,
-                RegisterTransactionTS: ts,
-                RewardsAmount: 30.00,
-                StoreNum: 6264,
-                TransactionAmmount: parseFloat($('#tenderAmount').val()) || 0
+    const vMemb = catalogoMembresias[$('#membershipSelect').val()] || {},
+          vTender = catalogoTenders[$('#tenderSelect').val()] || {},
+          vReq = {
+            APIKey: API_KEY, Channel: $('#channel').val() || "POS", PlayerInfo: vMemb,
+            DetailInfo: {
+                OperationCode: $('#operationCode').val() || "Accumulate",
+                TransactionHeader: {
+                    CountryCode: COUNTRY_CODE,
+                    OperatorNumber: OPERATOR_NUMBER,
+                    RegisterNum: REGISTER_NUM,
+                    RegisterTransactionNum: parseInt($('#registerTransactionNum').val()) || 1,
+                    RegisterTransactionTS: $('#registerTransactionTS').val() || getFormattedNow(),
+                    RewardsAmount: 30.00,
+                    StoreNum: STORE_NUM,
+                    TransactionAmmount: parseFloat($('#tenderAmount').val()) || 0
+                },
+                LineItem: vItems,
+                Tenders: [{ TenderId: vTender.TenderId, TenderAmount: parseFloat($('#tenderAmount').val()) || 0 }]
             },
-            LineItem: items,
-            Tenders: [{
-                TenderId: tender.TenderId,
-                TenderAmount: parseFloat($('#tenderAmount').val()) || 0
-            }]
-        },
-        RequestTimeStamp: ts,
-        RequestIsSAF: false
-    };
-    $('#jsonRequest').text(JSON.stringify(request, null, 2));
-    return request;
+            RequestTimeStamp: $('#registerTransactionTS').val() || getFormattedNow(),
+            RequestIsSAF: REQUEST_IS_SAF
+        };
+    $('#jsonRequestProcessTransaction').text(JSON.stringify(vReq, null, 2));
+    return vReq;
 }
 
+// Artículos seleccionados en todas las filas (para evitar repetidos)
 function getArticulosSeleccionados() {
-    let indices = [];
-    $('.articulo-fila').each(function() {
-        let idx = $(this).find('.item-select').val();
-        if (idx !== undefined && idx !== null) indices.push(idx);
-    });
-    return indices.map(i => parseInt(i));
+    return $('.articulo-fila').map(function() {
+        return parseInt($(this).find('.item-select').val());
+    }).get();
 }
 
-function agregarFilaArticulo(index = 0) {
-    let seleccionados = getArticulosSeleccionados();
-    let options = catalogoArticulos.map((a, i) => {
-        return seleccionados.includes(i) ? '' : `<option value="${i}">${a.Descripcion}</option>`;
-    }).join('');
-    if (!options) return;
-
-    let html = `
-    <div class="form-row articulo-fila mb-2" data-idx="${index}">
-        <div class="col-md-3">
-            <select class="form-control item-select">${options}</select>
-        </div>
-        <div class="col-md-2"><input type="text" class="form-control item-price" id="itemPrice_${index}" readonly></div>
-        <div class="col-md-2"><input type="number" class="form-control item-qty" id="itemQty_${index}" min="1" value="1"></div>
-        <div class="col-md-2"><input type="text" class="form-control item-total item-total" id="itemTotal_${index}" readonly></div>
-        <div class="col-md-2"><input type="number" class="form-control item-accum" id="itemAccum_${index}" value="200"></div>
+// Crea una fila de artículo en el formulario y sus listeners
+function agregarFilaArticulo(pIndex = 0) {
+    const vSeleccionados = getArticulosSeleccionados(),
+          vOptions = catalogoArticulos.map((a, i) =>
+            vSeleccionados.includes(i) ? '' : `<option value="${i}">${a.Descripcion}</option>`
+          ).join('');
+    if (!vOptions) return;
+    $('#articulosContainer').append(`
+    <div class="form-row articulo-fila mb-2" data-idx="${pIndex}">
+        <div class="col-md-3"><select class="form-control item-select">${vOptions}</select></div>
+        <div class="col-md-2"><input type="text" class="form-control item-price" id="itemPrice_${pIndex}" readonly></div>
+        <div class="col-md-2"><input type="number" class="form-control item-qty" id="itemQty_${pIndex}" min="1" value="1"></div>
+        <div class="col-md-2"><input type="text" class="form-control item-total" id="itemTotal_${pIndex}" readonly></div>
+        <div class="col-md-2"><input type="number" class="form-control item-accum" id="itemAccum_${pIndex}" value="200"></div>
         <div class="col-md-1 d-flex align-items-center"><button type="button" class="btn btn-danger btn-sm remove-articulo">&times;</button></div>
-    </div>`;
-    $('#articulosContainer').append(html);
+    </div>`);
+    actualizarPrecioCantidadFila(pIndex);
 
-    actualizarPrecioCantidadFila(index);
-
-    $(`.articulo-fila[data-idx="${index}"] .item-select`).on('change', function() {
+    // Encapsulado: listeners de cambios
+    $(`.articulo-fila[data-idx="${pIndex}"] .item-select`).on('change', function() {
         sincronizarArticulosEnTodasLasFilas();
-        actualizarPrecioCantidadFila(index);
+        actualizarPrecioCantidadFila(pIndex);
         actualizarJsonRequest();
     });
-
-    $(`#itemQty_${index}, #itemAccum_${index}`).on('input change', function() {
-        actualizarPrecioCantidadFila(index);
+    $(`#itemQty_${pIndex}, #itemAccum_${pIndex}`).on('input change', function() {
+        actualizarPrecioCantidadFila(pIndex);
         actualizarJsonRequest();
     });
-
     $('.remove-articulo').last().click(function() {
         $(this).closest('.articulo-fila').remove();
         sincronizarArticulosEnTodasLasFilas();
@@ -137,182 +224,182 @@ function agregarFilaArticulo(index = 0) {
         recalcularMontoPago();
         checarBotonAgregarArticulo();
     });
-
     checarBotonAgregarArticulo();
 }
-
 function sincronizarArticulosEnTodasLasFilas() {
-    let seleccionados = getArticulosSeleccionados();
+    const vSeleccionados = getArticulosSeleccionados();
     $('.articulo-fila').each(function() {
-        let $select = $(this).find('.item-select');
-        let actual = $select.val();
-        let options = catalogoArticulos.map((a, i) => {
-            let disabled = (seleccionados.includes(i) && i != actual);
-            return `<option value="${i}"${disabled ? ' disabled' : ''}${i == actual ? ' selected' : ''}>${a.Descripcion}</option>`;
-        }).join('');
-        $select.html(options);
+        const $select = $(this).find('.item-select'), vActual = $select.val();
+        $select.html(catalogoArticulos.map((a, i) =>
+            (vSeleccionados.includes(i) && i != vActual) ? '' : `<option value="${i}"${i == vActual ? ' selected' : ''}>${a.Descripcion}</option>`
+        ).join(''));
     });
     checarBotonAgregarArticulo();
 }
-
 function checarBotonAgregarArticulo() {
-    if (getArticulosSeleccionados().length >= catalogoArticulos.length) {
-        $('#addArticuloBtn').prop('disabled', true);
-    } else {
-        $('#addArticuloBtn').prop('disabled', false);
-    }
+    $('#addArticuloBtn').prop('disabled', getArticulosSeleccionados().length >= catalogoArticulos.length);
+}
+function actualizarPrecioCantidadFila(pIndex) {
+    const vArtIdx = $(`.articulo-fila[data-idx="${pIndex}"] .item-select`).val(),
+          vArt = catalogoArticulos[vArtIdx];
+    $(`#itemPrice_${pIndex}`).val(vArt.ItemBasePrice);
+    recalcularTotalFila(pIndex);
 }
 
-function actualizarPrecioCantidadFila(index) {
-    let artIdx = $(`.articulo-fila[data-idx="${index}"] .item-select`).val();
-    let art = catalogoArticulos[artIdx];
-    $(`#itemPrice_${index}`).val(art.ItemBasePrice);
-    recalcularTotalFila(index);
-}
-
+// Reset del formulario, restaurando No. Transacción desde cookies
 function resetearFormulario() {
-    // Resetea todos los campos al estado inicial
-    $('#membershipSelect').prop('selectedIndex', 0);
-    $('#operationCode').prop('selectedIndex', 0);
+    $('#registerTransactionNum').val(parseInt(getCookie('sams_tester_numTrans')) || 1);
+    $('#membershipSelect, #operationCode, #tenderSelect').prop('selectedIndex', 0);
     $('#channel').val('POS');
     $('#registerTransactionTS').val(getFormattedNow());
-    $('#registerTransactionNum').val(1);
-    $('#tenderSelect').prop('selectedIndex', 0);
     $('#tenderAmount').val('');
     $('#articulosContainer').empty();
     agregarFilaArticulo(0);
     recalcularMontoPago();
-    //actualizarJsonRequest();
-    //$('#responseBox').val('');
-    //$('#responseTable tbody').empty();
+    actualizarJsonRequest();
 }
 
-function ejecutarEnvioRequest(usandoMock) {
-    let now = getFormattedNow();
-    $('#registerTransactionTS').val(now);
-    let request = actualizarJsonRequest();
-
-    if (usandoMock) {
-        let responseMock = {
-            "HeaderResponse": {
-                "Code": 200,
-                "IsSuccessful": true,
-                "MessageCode": "OK",
-                "TechnicalMessage": "",
-                "UserMessage": ""
-            },
-            "RewardsInformation": {
-                "MembershipNumber": "10234120259973428",
-                "MembershipStatus": "A",
-                "TotalAccumulatedRewards": 2365.74,
-                "TotalAvailableRewardsActualPeriod": 0,
-                "RewardsExpirationDateActualPeriod": "21/03/2021",
-                "TotalAvailableRewardsPreviousPeriod": 0,
-                "RewardsExpirationDatePreviousPeriod": "21/03/2020",
-                "TotalPeriodAccumulatedRewards": 2365.74,
-                "TotalPeriodRedeemedRewards": 100,
-                "TotalTransactionAccumulatedRewards": 100.0,
-                "LineItem": [
-                    {
-                        "SequenceNum": 1,
-                        "ItemUPC": "7501030426332",
-                        "ItemAccumulatedRewards": 200.0,
-                        "ItemBasePrice": "20.64",
-                        "ItemQuantity": 1
-                    }
-                ]
-            }
-        };
-        $('#responseBox').val(JSON.stringify(responseMock, null, 2));
-        mostrarTabla(responseMock);
-        setTimeout(resetearFormulario, 500);
+// Envío de la petición principal (mock o real), con headers especiales y manejo de incrementos
+function ejecutarEnvioRequest(pUsarMock) {
+    $('#registerTransactionTS').val(getFormattedNow());
+    const vRequest = actualizarJsonRequest(),
+          vNumTrans = parseInt($('#registerTransactionNum').val()) || 1;
+    setCookie('sams_tester_numTrans', vNumTrans + 1);
+    if (pUsarMock) {
+        $('#jsonResponseProcessTransaction').val(JSON.stringify(MOCK_RESPONSE_PROCESSTRANSACTION, null, 2));
+        mostrarTabla(MOCK_RESPONSE_PROCESSTRANSACTION);
     } else {
         $.ajax({
-            url: SERVICE_URL,
+            url: SERVICE_URL_PROCESSTRANSACTION,
             type: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify(request),
+            data: JSON.stringify(vRequest),
             headers: {
-                'userName': 'SAMSMXService.User',
-                'password': 'SAMSMXService.Pass',
+                'userName': SERVICE_USER,
+                'password': SERVICE_PASS,
                 'Content-Type': 'application/json'
             },
             success: function(response) {
-                $('#responseBox').val(JSON.stringify(response, null, 2));
+                $('#jsonResponseProcessTransaction').val(JSON.stringify(response, null, 2));
                 mostrarTabla(response);
-                setTimeout(resetearFormulario, 500);
             },
             error: function(xhr, status, error) {
-                $('#responseBox').val("Error al consumir el servicio:\n" + error);
-                $('#responseTable tbody').empty();
-                setTimeout(resetearFormulario, 1500);
+                $('#jsonResponseProcessTransaction').val("Error al consumir el servicio:\n" + error);
+                $('#responseTableProcessTransaction tbody').empty();
             }
         });
     }
+    setTimeout(resetearFormulario, 1000);
 }
 
-function mostrarTabla(response) {
-    let body = $('#responseTable tbody');
-    body.empty();
-    if(response.RewardsInformation && response.RewardsInformation.LineItem) {
-        response.RewardsInformation.LineItem.forEach(function(item) {
-            body.append(`<tr>
+// Rellena la tabla de recompensas del response principal
+function mostrarTabla(pResponse) {
+    const vBody = $('#responseTableProcessTransaction tbody').empty();
+    if (pResponse.RewardsInformation && pResponse.RewardsInformation.LineItem)
+        pResponse.RewardsInformation.LineItem.forEach(item =>
+            vBody.append(`<tr>
                 <td>${item.SequenceNum}</td>
                 <td>${item.ItemUPC}</td>
                 <td>${item.ItemAccumulatedRewards}</td>
                 <td>${item.ItemBasePrice}</td>
                 <td>${item.ItemQuantity}</td>
-            </tr>`);
-        });
-    }
+            </tr>`)
+        );
 }
 
-$(document).ready(function() {
-    $('#jsonRequest, #responseBox').css({
-        'min-height': '140px',
-        'height': '180px',
-        'max-height': '220px',
-        'overflow-y': 'auto',
-        'resize': 'none'
-    });
+// ======================== FORMULARIO GETBALANCE =======================
 
+// Inicializa el formulario GetBalance con catálogo, fechas, etc.
+function initGetBalanceForm() {
+    if (Array.isArray(catalogoMembresias) && catalogoMembresias.length) {
+        const vSel = $('#gbMembershipNumber').empty();
+        catalogoMembresias.forEach(m => vSel.append(`<option value="${m.MembershipNumber}">${m.MembershipNumber}</option>`));
+    }
+    const vNow = new Date(), vYear = vNow.getFullYear(),
+          vMonth = String(vNow.getMonth() + 1).padStart(2, '0'), vDay = String(vNow.getDate()).padStart(2, '0');
+    $('#gbExpirationDate').val(`${vYear}-${vMonth}-${vDay}`);
+    $('#gbStartDt').val(`${vYear}-01-01`);
+    $('#gbEndDt').val(`${vYear}-12-31`);
+    actualizarGbJsonRequest();
+}
+
+// Genera JSON para GetBalance y lo muestra
+function actualizarGbJsonRequest() {
+    const vReq = {
+        APIKey: API_KEY,
+        MembershipNumber: $('#gbMembershipNumber').val(),
+        ExpirationDate: $('#gbExpirationDate').val(),
+        MessageType: $('#gbMessageType').val(),
+        StartDt: $('#gbStartDt').val(),
+        EndDt: $('#gbEndDt').val(),
+        RequestTimeStamp: getFormattedNow()
+    };
+    $('#jsonRequestGetBalance').text(JSON.stringify(vReq, null, 2));
+    return vReq;
+}
+
+// Tabla con estado de cuenta del response de GetBalance
+function mostrarGbTabla(pResponse) {
+    const vBody = $('#responseTableGetBalance tbody').empty(),
+          vArr = (pResponse.RewardsInformation && pResponse.RewardsInformation.AccountStatement) ? pResponse.RewardsInformation.AccountStatement : [];
+    vArr.forEach(item =>
+        vBody.append(`<tr>
+            <td>${item.ProcessedDate || ''}</td>
+            <td>${item.RegisterNumber || ''}</td>
+            <td>${item.RegisterTransactionNumber || ''}</td>
+            <td>${item.RegisterTransactionTS || ''}</td>
+            <td>${item.RewardsStatus || ''}</td>
+            <td>${item.StoreNumber || ''}</td>
+            <td>${item.TransactionAmount || ''}</td>
+            <td>${item.TransactionMembershipCard || ''}</td>
+            <td>${item.TransactionMoneyAmount || ''}</td>
+            <td>${item.TransactionRewardsAmount || ''}</td>
+            <td>${item.TransactionType || ''}</td>
+        </tr>`)
+    );
+}
+
+// ==================== INICIALIZACIÓN Y EVENTOS ====================
+
+$(document).ready(function() {
+    // Inicialización campos y catálogos
+    $('#registerTransactionNum').val(parseInt(getCookie('sams_tester_numTrans')) || 1);
+    $('#jsonRequestProcessTransaction, #jsonResponseProcessTransaction').css({
+        'min-height': '140px', 'height': '180px', 'max-height': '220px', 'overflow-y': 'auto', 'resize': 'none'
+    });
     $('#registerTransactionTS').val(getFormattedNow());
     $('#channel').val("POS");
-    $('#registerTransactionNum').val(1);
 
-    $.getJSON('catalogo_articulos.json', function(data) {
-        catalogoArticulos = data;
-        agregarFilaArticulo(0);
-    });
-    $.getJSON('catalogo_tender.json', function(data) {
-        catalogoTenders = data;
-        $.each(catalogoTenders, function(i, tender) {
-            $('#tenderSelect').append(`<option value="${i}">${tender.Descripcion}</option>`);
-        });
-    });
-    $.getJSON('catalogo_membresias.json', function(data) {
-        catalogoMembresias = data;
-        $.each(catalogoMembresias, function(i, memb) {
-            $('#membershipSelect').append(`<option value="${i}">${memb.MembershipNumber}</option>`);
-        });
-    });
+    // Catálogos asíncronos
+    $.getJSON('catalogo_articulos.json', data => { catalogoArticulos = data; agregarFilaArticulo(0); });
+    $.getJSON('catalogo_tender.json', data => { catalogoTenders = data; data.forEach((t, i) => $('#tenderSelect').append(`<option value="${i}">${t.Descripcion}</option>`)); });
+    $.getJSON('catalogo_membresias.json', data => { catalogoMembresias = data; data.forEach((m, i) => $('#membershipSelect').append(`<option value="${i}">${m.MembershipNumber}</option>`)); });
 
-    $('#membershipSelect, #operationCode, #channel, #registerTransactionNum').on('change input', function() {
-        actualizarJsonRequest();
-    });
-
-    $('#addArticuloBtn').click(function() {
-        let idx = $('.articulo-fila').length;
-        agregarFilaArticulo(idx);
-        actualizarJsonRequest();
-    });
-
-    $('#btnSendMock').click(function() {
-        ejecutarEnvioRequest(true); // true: mock
-    });
-    $('#btnSendReal').click(function() {
-        ejecutarEnvioRequest(false); // false: real
-    });
-
+    // Listeners generales ProcessTransaction
+    $('#membershipSelect, #operationCode, #channel, #registerTransactionNum').on('change input', actualizarJsonRequest);
+    $('#addArticuloBtn').click(function() { agregarFilaArticulo($('.articulo-fila').length); actualizarJsonRequest(); });
+    $('#btnSendMockProcessTransaction').click(() => ejecutarEnvioRequest(true));
+    $('#btnSendRealProcessTransaction').click(() => ejecutarEnvioRequest(false));
     setTimeout(actualizarJsonRequest, 800);
+
+    // GetBalance: Listeners y sub-botones
+    $(document).on('change input', '#gbMembershipNumber, #gbExpirationDate, #gbMessageType, #gbStartDt, #gbEndDt', actualizarGbJsonRequest);
+    $('#btnSendMockGetBalance').click(() => { $('#jsonResponseGetBalance').val(JSON.stringify(MOCK_RESPONSE_GETBALANCE, null, 2)); mostrarGbTabla(MOCK_RESPONSE_GETBALANCE); });
+    $('#btnSendRealGetBalance').click(function() {
+        const vReq = actualizarGbJsonRequest();
+        $.ajax({
+            url: SERVICE_URL_GETBALANCE,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(vReq),
+            headers: {
+                'userName': SERVICE_USER,
+                'password': SERVICE_PASS,
+                'Content-Type': 'application/json'
+            },
+            success: function(response) { $('#jsonResponseGetBalance').val(JSON.stringify(response, null, 2)); mostrarGbTabla(response); },
+            error: function(xhr, status, error) { $('#jsonResponseGetBalance').val("Error al consumir el servicio:\n" + error); $('#responseTableGetBalance tbody').empty(); }
+        });
+    });
+    setTimeout(initGetBalanceForm, 1200);
 });
